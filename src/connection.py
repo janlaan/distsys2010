@@ -11,12 +11,15 @@ class Connection:
     Connects to a certain host/port.
     """
 
-    def __init__(self, host, port):
+    def __init__(self, host, port=None):
         """
         Initialize the connection with another host.
         """
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((host, port))
+        if port == None:
+            self.sock = host
+        else:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((host, port))
         
     def send(self, msg):
         """
@@ -32,7 +35,14 @@ class Connection:
         settimeout().  Returns the received data as string, if any.
         """
         return self.sock.recv(size)
-        
+    
+    def getaddress(self):
+        """
+        Retrieve the address of the client you are connected to.
+        """
+
+        return self.sock.getpeername()
+
     def settimeout(self, secs=0):
         """
         Set a timeout for this connection.

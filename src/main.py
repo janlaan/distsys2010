@@ -1,5 +1,6 @@
 import threading
 import serveraction
+import listener
 from connection import *
 from packedmessage import *
 
@@ -21,12 +22,14 @@ class ListenThread(threading.Thread):
 if __name__ == '__main__':
    control = Connection(*CONTROL_SERVER)
    
-   sendmsg = '146.50.7.26:2000:weeeeeeeee'
-   msg = MessagePacker(601, sendmsg)
-   #print msg.get()
-   control.send(msg.get())
-   #control.send(str(21) + str(601) + '123213312312331:1')
-   
+   my_ip = socket.gethostbyname(socket.gethostname())
+   print my_ip
+   sendmsg = my_ip + ':2010:weeeeeeeee'
+
+   control.send(Packer(601, sendmsg).get())
+
+   l = listener.Listener()
+   l.start()
    while 1: 
       #recieve incoming messages from the control server
       in_msg = control.receive()
@@ -35,4 +38,4 @@ if __name__ == '__main__':
       dec_msg = decoded.get()
       
       s = serveraction.ServerAction(dec_msg[1], dec_msg[2], control, '')
-      s.run()
+      s.start()

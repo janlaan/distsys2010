@@ -3,10 +3,12 @@ from actions import *
 
 class ServerAction(threading.Thread):
    """
-   Parent ServerAction class.
-   let other classes be child of this one.
+   Serveraction class. This class takes a message and decides what action to take.
    """
    def __init__(self, atype, message, client, address):
+      """
+      Add relevant info
+      """
       super(ServerAction, self).__init__()
       self.action_type = atype
       self.message = message
@@ -15,15 +17,15 @@ class ServerAction(threading.Thread):
    
    
    def run(self):
-      #implement this for child-classes
-      print 'i got a message, i am going to process it now'
-      print "msg: (%d) %s from: %s" % (self.action_type, self.message, self.address)
-      print self.client
-
+      """
+      Process the received message based on its type.
+      """
+      print "msg: (%d) %s from: %s" % (self.action_type, self.message, self.client.getaddress())
       
+      #Try to call th function associated with this message type.
       fn = globals().get("handle_" + str(self.action_type))
       if fn and callable(fn):
          fn(self.message, self.address, self.client)
       else:
-         print 'fail'
+         print "Received unknown message type %d" % self.action_type
 

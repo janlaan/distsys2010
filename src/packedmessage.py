@@ -1,6 +1,6 @@
 import struct
 
-class MessagePacker:
+class Packer:
 
    def __init__(self, msgtype, message):
       msglen = len(message)
@@ -13,8 +13,9 @@ class MessagePacker:
 class Unpacker:
    def __init__(self, packed):
       msglen = len(packed)
-      
+      print "unpacking length = %d" % msglen
       self.msg = struct.unpack('!HH'+str(msglen - 4)+'s', packed)
    
    def get(self):
       return self.msg
+
