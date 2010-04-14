@@ -1,4 +1,5 @@
 import threading
+from actions import *
 
 class ServerAction(threading.Thread):
    """
@@ -18,4 +19,11 @@ class ServerAction(threading.Thread):
       print 'i got a message, i am going to process it now'
       print "msg: (%d) %s from: %s" % (self.action_type, self.message, self.address)
       print self.client
-      pass
+
+      
+      fn = globals().get("handle_" + str(self.action_type))
+      if fn and callable(fn):
+         fn(self.message, self.address, self.client)
+      else:
+         print 'fail'
+
