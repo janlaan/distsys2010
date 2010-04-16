@@ -5,6 +5,9 @@ import socket
 
 #Control server address
 CONTROL_SERVER = ('146.50.1.74', 2001)
+CLIENT = 1
+PARENT_SERVER = 2
+CHILD_SERVER = 3
 
 class Connection:
     """
