@@ -21,7 +21,7 @@ def broadcast_all(message_type, message):
       print s
       s['socket'].send(Packer(message_type, message).get())
   
-def broadcast_clients():
+def broadcast_clients(message_type, message):
    """
    Method to send a message to all clients.
    """
@@ -29,7 +29,7 @@ def broadcast_clients():
    for s in sockets:
       s['socket'].send(Packer(message_type, message).get())
     
-def broadcast_servers():
+def broadcast_servers(message_type, message):
    """
    Method to send a message to all servers.
    """
@@ -53,7 +53,7 @@ def handle_100(message, address, client):
       
 
 def handle_110(message, address, client):
-   DB.insert( adress, client, message, CLIENT)
+   DB.insert( address, client, message, CLIENT)
 
 def handle_120(message, address, client):
    name = message.split()[0]
@@ -92,15 +92,15 @@ def handle_200(message, address, client):
    if(destination == "#all"):
       sender = DB.get_by_socket(client)
       broadcast_all(300, sender['name'] + ' ' + message)
-      
-   elif(DB.get_by_address(destination)["socket"]):
+   elif(DB.get_by_name(destination) != False):
       #client = database.get_name_client(destination)
-      sock = DB.get_by_address(destination)["socket"]
-      addr = sock.getaddress()
-      unicast(300, addr[0] + ' ' + message, sock)
-      
+      sock = DB.get_by_name(destination)["socket"]
+      sender = DB.get_by_socket(client)
+      unicast(300, sender['name'] + ' ' + message, sock)
+   
    else:
-      message = adress +' '+ message
+      sender = DB.get_by_socket(client)
+      message = sender['name'] +' '+ message
       broadcast_servers(300, message)
 
 def handle_210(message, address, client):
@@ -151,8 +151,11 @@ def handle_602(message, addres, client):
    if message != 'none':
       #Only add a parent when you are actually given one.
       address = message.split(':')
-      sock = Connection(address[0], int(address[1]))
-      #send something, say hi
+      global sock
+      sock = Connection('146.50.7.85', 2001)
+      #sock = Connection(address[0], int(address[1]))
+      
+      unicast(600, '146.50.7.85:2001 :weeeeee', sock)
       DB.insert(address[0], sock, address[2], PARENT_SERVER)
    
 
