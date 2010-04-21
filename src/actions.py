@@ -96,43 +96,78 @@ def handle_210(message, address, client):
    pass
 
 def handle_300(message, address, client):
-   pass
+   #do stuff
+   
 
 def handle_310(message, address, client):
-   pass
+   handle_300(message, address, client)
 
 
 def handle_500(message, address, client):
+   #server -> client only
    pass
 
 def handle_510(message, address, client):
+   #server -> client only
    pass
 
 def handle_520(message, address, client):
+   #to client only
    pass
 
 def handle_530(message, address, client):
+   #from server to client only
    pass
 
 def handle_600(message, address, client):
-   database.add_server(message)
+   """
+   Another server applies to you to be your child server.
+   """
+   address,name = message.split()
+   ip = address.split(':')
+   DB.insert(ip[0], client, name, CHILD_SERVER)
+  
 
 def handle_601(message, address, client):
+   #you don't recieve 601's
    pass
 
 def handle_602(message, addres, client):
-   database.set_parent(message)
+   """
+   You are assigned a parent server
+   """
+   
+   if message != 'none':
+      #Only add a parent when you are actually given one.
+      address = message.split(':')
+      sock = Connection(address[0], int(address[1]))
+      DB.insert(address[0], sock, address[2], PARENT_SERVER)
+   
 
 def handle_603(message, address, client):
+   #You don't recieve 603's
    pass
 
 def handle_604(message, address, client):
-   pass
+   words = message.split()
+   
+   removed = DB.get_by_type(PARENT_SERVER)
+   
+   if removed['type'] == CHILD_SERVER || removed['type'] == PARENT_SERVER:
+      #TODO: remove all clients if this is a server
+   
+   #remove disconnected node itself
+   DB.remove_by_name(removed[0]['name'])
+   
+   if words[1]:
+      handle_602(words[1], address, client)
 
 def handle_610(message, address, client):
+   #sent from client to control server
    pass
 
 def handle_611(message, address, client):
+   #Sent from control server to client
    pass
 
 def handle_700(message, address, client):
