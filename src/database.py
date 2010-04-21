@@ -7,7 +7,7 @@ class Database:
     self.db = []
     
   def insert(self, address, socket, name, conn_type):
-    self.db.add({"address":adress, "socket":socket, "name":name, "type":conn_type, "last_action": time.time()})
+    self.db.append({"address":adress, "socket":socket, "name":name, "type":conn_type, "last_action": time.time()})
     
     
   def get_by_name(self, name):
@@ -19,6 +19,12 @@ class Database:
   def get_by_address(self, address):
     for c in self.db:
       if c["address"] == address:
+        return c
+    return false
+    
+  def get_by_socket(self, socket):
+    for c in self.db:
+      if c["socket"] == socket:
         return c
     return false
     
@@ -46,6 +52,12 @@ class Database:
       if c["socket"]:
         yield c
         
-
+   
+   def remove_by_name(self, name):
+      for c in self.db:
+         if c["name"] == name:
+            self.db.remove(c)
+            return true
+      return false
 
 DB = Database()
