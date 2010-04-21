@@ -1,6 +1,6 @@
 from connection import *
 from packedmessage import *
-import database
+from database import *
 
 
 def unicast(message_type, message, client):
@@ -12,38 +12,45 @@ def unicast(message_type, message, client):
 
 
 def broadcast_all(message_type, message):
-      """
-      Method to send a message to all clients and servers.
-      """
-   sockets = DB.get_all_connected()
+   """
+   Method to send a message to all clients and servers.
+   """
+   #sockets = DB.get_all_connections()
+   sockets = DB.get_by_type(CLIENT)
    for s in sockets:
-      s.send(Packer(message_type, message).get())
+      print s
+      s['socket'].send(Packer(message_type, message).get())
   
 def broadcast_clients():
-      """
-      Method to send a message to all clients.
-      """
-   sockets = DB.get_all_clients()
+   """
+   Method to send a message to all clients.
+   """
+   sockets = DB.get_by_type(CLIENT)
    for s in sockets:
-      s.send(Packer(message_type, message).get())
+      s['socket'].send(Packer(message_type, message).get())
     
 def broadcast_servers():
-      """
-      Method to send a message to all servers.
-      """
-   sockets = DB.get_all_servers()
+   """
+   Method to send a message to all servers.
+   """
+   sockets = DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
    for s in sockets:
-      s.send(Packer(message_type, message).get())
+      s['socket'].send(Packer(message_type, message).get())
    
 
 
 def handle_100(message, address, client):
-   if (DB.get_by_name(message) != false):
+   if (DB.get_by_name(message) != False):
       unicast(510, "Username already exists.", client)
    else:
       unicast(500,"", client)
-      DB.insert( adress, client, message, CLIENT)
+      all_clients = DB.get_by_type(CLIENT)
+      for c in all_clients:
+         unicast(110, c['name'], client)
+         
+      DB.insert( address, client, message, CLIENT)
       broadcast_all(110, message)
+      
 
 def handle_110(message, address, client):
    DB.insert( adress, client, message, CLIENT)
@@ -59,17 +66,18 @@ def handle_130(message, address, client):
       broadcast_all(130)
 
 def handle_140(message, address, client):
+   print DB.get_all_connections()
    unicast(150, message, client)
 
 def handle_150(message, address, client):
    DB.received_pong(message)
 
 def handle_160(message, address, client):
-   if(DB.get_by_name(message) == false):
-      oldname = database.get_by_socket(client)["name"]
-      DB.change_name(oldname, message)
+   if(DB.get_by_name(message) == False):
+      oldname = DB.get_by_socket(client)["name"]
+      DB.update_name(oldname, message)
       unicast(520,"", client)
-      new_message = oldname + message;
+      new_message = oldname + ' ' + message;
       broadcast_all(170, new_message)
    else:
       unicast(530, "Name already exists.", client)
@@ -82,11 +90,14 @@ def handle_200(message, address, client):
    destination = message.split()[0]
    
    if(destination == "#all"):
-      broadcast_all(300, message)
+      sender = DB.get_by_socket(client)
+      broadcast_all(300, sender['name'] + ' ' + message)
       
-   elif(DB.get_by_adress(destination)["socket"] != None):
+   elif(DB.get_by_address(destination)["socket"]):
       #client = database.get_name_client(destination)
-      unicast(300, message, DB.get_by_adress(destination)["socket"])
+      sock = DB.get_by_address(destination)["socket"]
+      addr = sock.getaddress()
+      unicast(300, addr[0] + ' ' + message, sock)
       
    else:
       message = adress +' '+ message
@@ -97,7 +108,7 @@ def handle_210(message, address, client):
 
 def handle_300(message, address, client):
    #do stuff
-   
+   pass
 
 def handle_310(message, address, client):
    handle_300(message, address, client)
@@ -141,6 +152,7 @@ def handle_602(message, addres, client):
       #Only add a parent when you are actually given one.
       address = message.split(':')
       sock = Connection(address[0], int(address[1]))
+      #send something, say hi
       DB.insert(address[0], sock, address[2], PARENT_SERVER)
    
 
@@ -151,10 +163,11 @@ def handle_603(message, address, client):
 def handle_604(message, address, client):
    words = message.split()
    
-   removed = DB.get_by_type(PARENT_SERVER)
+   removed = DB.get_by_type(PARENT_SERVER)[0]
    
-   if removed['type'] == CHILD_SERVER || removed['type'] == PARENT_SERVER:
+   if removed['type'] == CHILD_SERVER or removed['type'] == PARENT_SERVER:
       #TODO: remove all clients if this is a server
+      pass
    
    #remove disconnected node itself
    DB.remove_by_name(removed[0]['name'])
