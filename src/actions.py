@@ -1,13 +1,20 @@
 from connection import *
 from packedmessage import *
 from database import *
+import listener
+import log, logging
 
+logInstance = log.logger('message')
+mlogger = logging.getLogger('message')
+log.logger.init(logInstance, mlogger)
+mlogger.info('Message logger started')
 
 def unicast(message_type, message, client):
    """
    Method to send a message to one specific client. 
    Client variable is a socket.
    """
+   mlogger.info("Sending message to %s, message: (%d) %s" % (client.getaddress()[0], message_type, message))
    client.send(Packer(message_type, message).get())
 
 
@@ -16,15 +23,16 @@ def broadcast_all(message_type, message):
    Method to send a message to all clients and servers.
    """
    #sockets = DB.get_all_connections()
-   sockets = DB.get_by_type(CLIENT)
+   mlogger.info("Broadcasting to all, message: (%d) %s" % (message_type, message))
+   sockets = DB.get_by_type(CLIENT) + DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
    for s in sockets:
-      print s
       s['socket'].send(Packer(message_type, message).get())
   
 def broadcast_clients(message_type, message):
    """
    Method to send a message to all clients.
    """
+   mlogger.info("Broadcasting to CLIENTS, message: (%d) %s" % (message_type, message))
    sockets = DB.get_by_type(CLIENT)
    for s in sockets:
       s['socket'].send(Packer(message_type, message).get())
@@ -33,13 +41,33 @@ def broadcast_servers(message_type, message):
    """
    Method to send a message to all servers.
    """
+   mlogger.info("Broadcasting to SERVERS, message: (%d) %s" % (message_type, message))
    sockets = DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
    for s in sockets:
       s['socket'].send(Packer(message_type, message).get())
    
-
+def drop_client_by_socket(sock):
+   """
+   Removes one of your clients from the tree by socket.
+   (If the connection closed unexpectedly, or if it doesn't respond to pings)
+   """
+   conn = DB.get_by_socket(sock)
+   
+   if not conn:
+      return false
+   #Relay that this client or server is dead
+   if conn['type'] == CLIENT:
+      broadcast_all(130, conn['name'] + " Socket closed unexpectedly")
+   else:
+      control = DB.get_by_type(CONTROL_SERVER)
+      unicast(603, conn['name'], control[0]['socket'])
+   #remove it from our own database
+   DB.remove_by_socket(sock)
+      
 
 def handle_100(message, address, client):
+   DB.update_last_action(client)
+   
    if (DB.get_by_name(message) != False):
       unicast(510, "Username already exists.", client)
    else:
@@ -61,18 +89,23 @@ def handle_120(message, address, client):
       broadcast_all(130, message)
 
 def handle_130(message, address, client):
+   DB.update_last_action(client)
+   
    name = message.split()[0]
    if(DB.remove_by_name(name)):
       broadcast_all(130)
 
 def handle_140(message, address, client):
-   print DB.get_all_connections()
+   DB.update_last_action(client)
+   
    unicast(150, message, client)
 
 def handle_150(message, address, client):
-   DB.received_pong(message)
+   DB.update_last_action(client)
 
 def handle_160(message, address, client):
+   DB.update_last_action(client)
+   
    if(DB.get_by_name(message) == False):
       oldname = DB.get_by_socket(client)["name"]
       DB.update_name(oldname, message)
@@ -83,10 +116,14 @@ def handle_160(message, address, client):
       unicast(530, "Name already exists.", client)
 
 def handle_170(message, address, client):
+   DB.update_last_action(client)
+   
    names = message.split
    DB.update_name(names[0], names[1])
 
 def handle_200(message, address, client):
+   DB.update_last_action(client)
+   
    destination = message.split()[0]
    
    if(destination == "#all"):
@@ -104,13 +141,20 @@ def handle_200(message, address, client):
       broadcast_servers(300, message)
 
 def handle_210(message, address, client):
+   DB.update_last_action(client)
+   
    pass
 
 def handle_300(message, address, client):
+   DB.update_last_action(client)
+   
    #do stuff
    pass
 
 def handle_310(message, address, client):
+   DB.update_last_action(client)
+   #relay message to all the clients
+   broadcast_clients(300, message)
    handle_300(message, address, client)
 
 
@@ -147,15 +191,21 @@ def handle_602(message, addres, client):
    """
    You are assigned a parent server
    """
+   DB.update_last_action(client)
    
    if message != 'none':
       #Only add a parent when you are actually given one.
       address = message.split(':')
       global sock
-      sock = Connection('146.50.7.85', 2001)
+      sock = Connection(address[0], 2001)
       #sock = Connection(address[0], int(address[1]))
+      my_ip = socket.gethostbyname(socket.gethostname())
+      unicast(600, "%s:2001 :weeeeee" % my_ip, sock)
       
-      unicast(600, '146.50.7.85:2001 :weeeeee', sock)
+      #get the connection in a separate thread, so you can keep receiving data
+      s = listener.Clientconn(sock)
+      s.start()
+      
       DB.insert(address[0], sock, address[2], PARENT_SERVER)
    
 
@@ -164,12 +214,17 @@ def handle_603(message, address, client):
    pass
 
 def handle_604(message, address, client):
+   DB.update_last_action(client)
+   
    words = message.split()
    
-   removed = DB.get_by_type(PARENT_SERVER)[0]
+   removed = DB.get_by_name(words[0])
+   if not removed:
+      #You don't have this in your database, it's probably already removed: Do nothing.
+      return
    
    if removed['type'] == CHILD_SERVER or removed['type'] == PARENT_SERVER:
-      #TODO: remove all clients if this is a server
+      #TODO: remove all clients conencted to this server
       pass
    
    #remove disconnected node itself
@@ -187,5 +242,7 @@ def handle_611(message, address, client):
    pass
 
 def handle_700(message, address, client):
+   DB.update_last_action(client)
+   
    pass
    #program.DIE!

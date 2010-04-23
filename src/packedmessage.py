@@ -1,4 +1,9 @@
-import struct
+import struct, log, logging
+
+logInstance = log.logger('packer')
+pplogger = logging.getLogger('packer')
+log.logger.init(logInstance, pplogger)
+pplogger.info('Packer log started')
 
 class Packer:
 
@@ -13,7 +18,7 @@ class Packer:
 class Unpacker:
    def __init__(self, packed):
       msglen = len(packed)
-      print "unpacking length = %d" % msglen
+      pplogger.debug("Unpacking something with length %d" % msglen)
       self.msg = struct.unpack('!HH'+str(msglen - 4)+'s', packed)
    
    def get(self):

@@ -66,4 +66,13 @@ class Database:
         return True
     return False
 
+  def remove_by_socket(self, sock):
+    for c in self.db:
+      if c["socket"] == sock:
+        self.db.remove(c)
+        return True
+    return False
+     
+global DB
+
 DB = Database()

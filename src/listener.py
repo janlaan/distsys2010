@@ -2,11 +2,12 @@ from connection import *
 from packedmessage import *
 import threading
 import serveraction
+import actions
 import log, logging
 
 logInstance = log.logger('listener')
 logger = logging.getLogger('listener')
-log.logger.init(logInstance, self.logger)
+log.logger.init(logInstance, logger)
 logger.info('Listener started')
 class Listener(threading.Thread):
    
@@ -33,11 +34,15 @@ class Clientconn(threading.Thread):
          msg = self.client.receive()
          
          if len(msg) == 0:
-            logger.debug("empty message from %s" % self.client.getaddress()[0])
-            self.sock.close()
-            break
-         logger.debug("message received from %s" % self.client.getaddress()[0])
-         logger.debug("message = %s" % msg)
+            #for some reason, the connection was closed from the other end.
+            #remove the client.
+            logger.debug("empty message from %s. Assuming client dead." % self.client.getaddress()[0])
+            actions.drop_client_by_socket(self.client)
+            del(self.sock)
+            return
+         
+         logger.debug("Recieved message from %s" % self.client.getaddress()[0])
+         logger.debug("Message = %s" % msg)
          
          if msg:
             decoded = Unpacker(msg).get()

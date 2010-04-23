@@ -7,6 +7,7 @@ import socket
 CLIENT = 1
 PARENT_SERVER = 2
 CHILD_SERVER = 3
+CONTROL_SERVER = 4
 
 class Connection:
     """
