@@ -13,17 +13,6 @@ mlogger = logging.getLogger('main')
 log.logger.init(logInstance, mlogger)
 mlogger.info('Listener started')
 
-
-#global sys_exit
-#sys_exit = False
-global hoi
-hoi = '123123123'
-def stop_server():
-   global hoi
-   global sys_exit
-   hoi = "hallo"
-   sys_exit = True
-
 if __name__ == '__main__':
    """
    Main body of the chatserver, this starts all other components 

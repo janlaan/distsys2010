@@ -111,25 +111,26 @@ def handle_110(message, address, client):
 
 def handle_120(message, address, client):
    msg = message.split()
-   if (len(msg) != 1):
+   if (len(msg) < 1):
       mlogger.warning('Invalid message length %s', len(msg))
       return
-   
+   c = DB.get_by_socket(client)
    if DB.remove_by_socket(client):
-      broadcast_all(130, message)
+      broadcast_all(130, c['name'] + ' ' + message)
    del(client)
+   del(c)
 
 def handle_130(message, address, client):
    DB.update_last_action(client)
    
    msg = message.split()
-   if (len(msg) != 1):
+   if (len(msg) < 1):
       mlogger.warning('Invalid message length %s', len(msg))
       return
    
    name = message.split()[0]
    if(DB.remove_by_name(name)):
-      broadcast_all(130)
+      broadcast_all(130, message)
 
 def handle_140(message, address, client):
    DB.update_last_action(client)
@@ -173,7 +174,7 @@ def handle_200(message, address, client):
    DB.update_last_action(client)
    
    msg = message.split()
-   if (len(msg) != 2):
+   if (len(msg) < 2):
       mlogger.warning('Invalid message length %s', len(msg))
       return
    
@@ -201,7 +202,7 @@ def handle_300(message, address, client):
    DB.update_last_action(client)
    
    msg = message.split()
-   if (len(msg) != 3):
+   if (len(msg) < 3):
       mlogger.warning('Invalid message length %s', len(msg))
       return
    
