@@ -6,30 +6,52 @@ import sys
 from database import *
 from connection import *
 from packedmessage import *
-      
+import log, logging
+
+logInstance = log.logger('main')
+mlogger = logging.getLogger('main')
+log.logger.init(logInstance, mlogger)
+mlogger.info('Listener started')
+
 if __name__ == '__main__':
+   """
+   Main body of the chatserver, this starts all other components 
+   and upholds the connection to the control server
+   """
    
+   #connect to control server
    control = Connection(*DB.control_server)
    
    DB.insert(control.getaddress()[0], control, 'control_server', CONTROL_SERVER)
    my_ip = socket.gethostbyname(socket.gethostname())
    sendmsg = my_ip + ':2001 :weeeeeeeee'
-   
+   mlogger.info('Conencting to control server')
    control.send(Packer(601, sendmsg).get())
-
+   
+   #start listening for incoming message from other servers/clients
    l = listener.Listener()
    l.start()
    
+   #Start the pinger that pings inactive clients/servers
    p = pinger.Pinger()
    p.start()
+   
+   #listen to the control server
    while 1: 
       #recieve incoming messages from the control server
       in_msg = control.receive()
       if len(in_msg) == 0:
-         print "CONTROL SERVER CLOSED CONNECTION!!! (why?)"
-         sys.exit()
-      decoded = Unpacker(in_msg)
-      dec_msg = decoded.get()
-      
-      s = serveraction.ServerAction(dec_msg[1], dec_msg[2], control, '')
-      s.start()
+         mlogger.info("CONTROL SERVER CLOSED CONNECTION! (why?) Reconnecting now.")
+         #create new connection to control server
+         DB.remove_by_socket(control)
+         control = Connection(*DB.control_server)
+         DB.insert(control.getaddress()[0], control, 'control_server', CONTROL_SERVER)
+         control.send(Packer(601, sendmsg).get())
+         
+      else:
+         #process the message
+         decoded = Unpacker(in_msg)
+         dec_msg = decoded.get()
+         
+         s = serveraction.ServerAction(dec_msg[1], dec_msg[2], control, '')
+         s.start()
