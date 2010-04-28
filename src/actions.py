@@ -26,7 +26,8 @@ def broadcast_all(message_type, message):
    mlogger.info("Broadcasting to all, message: (%d) %s" % (message_type, message))
    sockets = DB.get_by_type(CLIENT) + DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
    for s in sockets:
-      s['socket'].send(Packer(message_type, message).get())
+      if s['socket']:
+         s['socket'].send(Packer(message_type, message).get())
   
 def broadcast_clients(message_type, message):
    """
@@ -35,7 +36,8 @@ def broadcast_clients(message_type, message):
    mlogger.info("Broadcasting to CLIENTS, message: (%d) %s" % (message_type, message))
    sockets = DB.get_by_type(CLIENT)
    for s in sockets:
-      s['socket'].send(Packer(message_type, message).get())
+      if s['socket']:
+         s['socket'].send(Packer(message_type, message).get())
     
 def broadcast_servers(message_type, message):
    """
@@ -54,7 +56,7 @@ def drop_client_by_socket(sock):
    conn = DB.get_by_socket(sock)
    
    if not conn:
-      return false
+      return False
    #Relay that this client or server is dead
    if conn['type'] == CLIENT:
       broadcast_all(130, conn['name'] + " Socket closed unexpectedly")
@@ -81,12 +83,21 @@ def handle_100(message, address, client):
       
 
 def handle_110(message, address, client):
-   DB.insert( address, client, message, CLIENT)
+   if(DB.get_by_socket(client)):
+      clients = DB.get_by_type(CLIENT) + DB.get_by_type(PARENT_SERVER) + DB.get_by_type(CHILD_SERVER)
+      
+      for c in clients:
+         if c['socket'] and (c['socket'] != client):
+            unicast(110, message, c['socket'])
+      DB.insert(address, None, message, CLIENT, client)
+   else:
+      DB.insert( address, client, message, CLIENT)
 
 def handle_120(message, address, client):
    name = message.split()[0]
-   if DB.remove_by_name(name):
+   if DB.remove_by_socket(client):
       broadcast_all(130, message)
+   del(client)
 
 def handle_130(message, address, client):
    DB.update_last_action(client)
@@ -147,14 +158,12 @@ def handle_210(message, address, client):
 
 def handle_300(message, address, client):
    DB.update_last_action(client)
-   
+   broadcast_clients(300, message)
    #do stuff
    pass
 
 def handle_310(message, address, client):
    DB.update_last_action(client)
-   #relay message to all the clients
-   broadcast_clients(300, message)
    handle_300(message, address, client)
 
 
