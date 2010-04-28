@@ -32,6 +32,7 @@ class logger:
 
    def init(self, Logger):
       File = logging.FileHandler('../log/' + self.name + '.log')
+      File.setLevel(logging.DEBUG)
       File.setFormatter(self.format)
       Logger.addHandler(File)
 
