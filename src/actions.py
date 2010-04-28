@@ -183,10 +183,10 @@ def handle_200(message, address, client):
    if(destination == "#all"):
       broadcast_all(300, sender + ' ' + message)
    elif(DB.get_by_name(destination) != False):
-      if not (DB.get_by_name(sender)["socket"]):
-         sock = DB.get_by_name(sender)["parent_sock"]
+      if not (DB.get_by_name(destination)["socket"]):
+         sock = DB.get_by_name(destination)["parent_sock"]
       else:
-         sock = DB.get_by_name(sender)["socket"]
+         sock = DB.get_by_name(destination)["socket"]
       unicast(300, sender + ' ' + message, sock)
    
    else:
@@ -210,10 +210,10 @@ def handle_300(message, address, client):
    if(destination == '#all'):
       broadcast_clients(300, message)
    else:
-      if not (DB.get_by_name(sender)["socket"]):
-         sock = DB.get_by_name(sender)["parent_sock"]
+      if not (DB.get_by_name(destination)["socket"]):
+         sock = DB.get_by_name(destination)["parent_sock"]
       else:
-         sock = DB.get_by_name(sender)["socket"]
+         sock = DB.get_by_name(destination)["socket"]
       unicast(300, message, sock) 
 
 def handle_310(message, address, client):
