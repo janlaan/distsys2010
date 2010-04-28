@@ -15,9 +15,6 @@ class Listener(threading.Thread):
    Opens a listen connection on port 2001.
    This enables clients and other servers to conenct to this one.
    """
-   def __init__(self):
-      super(Listener, self).__init__()
-      
    def run(self):
       listen = Listen(2001)
 

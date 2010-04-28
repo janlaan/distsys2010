@@ -31,6 +31,7 @@ class ServerAction(threading.Thread):
       alogger.info("Recieved message from %s, Message: (%d) %s" % (self.client.getaddress(), self.action_type, self.message))
       
       #Try to call th function associated with this message type.
+      #format = "handle_<type>" (eg: handle_100)
       fn = globals().get("handle_" + str(self.action_type))
       if fn and callable(fn):
          fn(self.message, self.address, self.client)

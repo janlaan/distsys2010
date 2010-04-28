@@ -15,6 +15,9 @@ class Packer:
       self.msg = struct.pack("!HH%ds" % msglen, msglen + 4, msgtype, message)
    
    def get(self):
+      """
+      Retreive the message
+      """
       return self.msg
    
 class Unpacker:
@@ -27,5 +30,8 @@ class Unpacker:
       self.msg = struct.unpack("!HH%ds" % (msglen - 4), packed)
    
    def get(self):
+      """
+      Retreive the message
+      """
       return self.msg
 

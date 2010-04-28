@@ -3,7 +3,7 @@ Connection interface. Use the classes in this module to create a connection.
 """
 import socket
 
-#Control server address
+#Connection types
 CLIENT = 1
 PARENT_SERVER = 2
 CHILD_SERVER = 3

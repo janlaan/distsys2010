@@ -21,9 +21,9 @@ import logging, logging.handlers
 class logger:
 
    # Set up logging variables
-   logging.basicConfig(level=logging.DEBUG,
-                   format='%(asctime)2s %(module)-12s %(levelname)-4s %(message)s',
-                   datefmt='%d-%m %H:%M')
+   #logging.basicConfig(level=logging.DEBUG,
+   #                format='%(asctime)2s %(module)-13s %(levelname)-5s %(message)s',
+   #                datefmt='%d-%m %H:%M')
    datefmt = '%d-%m %H:%M'
    format = logging.Formatter('%(asctime)2s %(module)-2s %(levelname)-4s %(message)s', datefmt)
 
