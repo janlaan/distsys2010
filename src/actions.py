@@ -178,19 +178,19 @@ def handle_200(message, address, client):
       return
    
    destination = message.split()[0]
+   sender = DB.get_by_socket(client)["name"]
    
    if(destination == "#all"):
-      sender = DB.get_by_socket(client)
-      broadcast_all(300, sender['name'] + ' ' + message)
+      broadcast_all(300, sender + ' ' + message)
    elif(DB.get_by_name(destination) != False):
-      #client = database.get_name_client(destination)
-      sock = DB.get_by_name(destination)["socket"]
-      sender = DB.get_by_socket(client)
-      unicast(300, sender['name'] + ' ' + message, sock)
+      if not (DB.get_by_name(sender)["socket"]):
+         sock = DB.get_by_name(sender)["parent_sock"]
+      else:
+         sock = DB.get_by_name(sender)["socket"]
+      unicast(300, sender + ' ' + message, sock)
    
    else:
-      sender = DB.get_by_socket(client)
-      message = sender['name'] +' '+ message
+      message = sender +' '+ message
       broadcast_servers(300, message)
 
 def handle_210(message, address, client):
