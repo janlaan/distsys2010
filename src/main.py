@@ -13,19 +13,29 @@ mlogger = logging.getLogger('main')
 log.logger.init(logInstance, mlogger)
 mlogger.info('Listener started')
 
+
+#global sys_exit
+#sys_exit = False
+global hoi
+hoi = '123123123'
+def stop_server():
+   global hoi
+   global sys_exit
+   hoi = "hallo"
+   sys_exit = True
+
 if __name__ == '__main__':
    """
    Main body of the chatserver, this starts all other components 
    and upholds the connection to the control server
    """
-   
    #connect to control server
    control = Connection(*DB.control_server)
    
    DB.insert(control.getaddress()[0], control, 'control_server', CONTROL_SERVER)
    my_ip = socket.gethostbyname(socket.gethostname())
    sendmsg = my_ip + ':2001 :weeeeeeeee'
-   mlogger.info('Conencting to control server')
+   mlogger.info('Connecting to control server')
    control.send(Packer(601, sendmsg).get())
    
    #start listening for incoming message from other servers/clients
@@ -35,9 +45,14 @@ if __name__ == '__main__':
    #Start the pinger that pings inactive clients/servers
    p = pinger.Pinger()
    p.start()
+   global sys_exit
    
+   sys_exit = False
    #listen to the control server
    while 1: 
+      if DB.get_exit():
+         print "server going down"
+         sys.exit()
       #recieve incoming messages from the control server
       in_msg = control.receive()
       if len(in_msg) == 0:

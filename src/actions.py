@@ -1,7 +1,7 @@
 from connection import *
 from packedmessage import *
 from database import *
-import listener
+import listener, pinger, main, serveraction
 import log, logging, sys
 
 logInstance = log.logger('message')
@@ -71,7 +71,7 @@ def handle_100(message, address, client):
    DB.update_last_action(client)
    
    msg = message.split()
-   if (len(msg) != 1):
+   if (len(msg) < 1):
       mlogger.warning('Invalid message length %s', len(msg))
       return
    
@@ -253,7 +253,7 @@ def handle_604(message, address, client):
    DB.update_last_action(client)
    
    msg = message.split()
-   if (len(msg) != 1):
+   if (len(msg) < 1 or len(msg) > 2):
       mlogger.warning('Invalid message length %s', len(msg))
       return
    
@@ -279,7 +279,8 @@ def handle_604(message, address, client):
 def handle_700(message, address, client):
    c = DB.get_by_socket(client)
    if (c["password"]):
-      sys.exit()
+      mlogger.info("stopping server")
+      DB.do_exit()
 
    
    
