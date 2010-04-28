@@ -68,6 +68,9 @@ def drop_client_by_socket(sock):
       
 
 def handle_100(message, address, client):
+   """
+   Allows for registering clients
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -76,6 +79,9 @@ def handle_100(message, address, client):
       return
    
    name = msg[0]
+   
+   # The admin password is 'koekje', if valid
+   # the admin flag is set in the database
    password = False
    if(len(msg) == 2):
       if (msg[1] == "koekje"):
@@ -94,6 +100,9 @@ def handle_100(message, address, client):
       
 
 def handle_110(message, address, client):
+   """
+   Allows for adding clients
+   """
    msg = message.split()
    if (len(msg) != 1):
       mlogger.warning('Invalid message length %s', len(msg))
@@ -110,6 +119,9 @@ def handle_110(message, address, client):
       DB.insert( address, client, message, CLIENT)
 
 def handle_120(message, address, client):
+   """
+   Delete clients when they disconnect
+   """
    msg = message.split()
    if (len(msg) < 1):
       mlogger.warning('Invalid message length %s', len(msg))
@@ -121,6 +133,9 @@ def handle_120(message, address, client):
    del(c)
 
 def handle_130(message, address, client):
+   """
+   Handles client disconnect message
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -133,6 +148,9 @@ def handle_130(message, address, client):
       broadcast_all(130, message)
 
 def handle_140(message, address, client):
+   """
+   Ping pong
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -143,6 +161,9 @@ def handle_140(message, address, client):
    unicast(150, message, client)
 
 def handle_160(message, address, client):
+   """
+   Sends new client name
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -160,6 +181,9 @@ def handle_160(message, address, client):
       unicast(530, "Name already exists.", client)
 
 def handle_170(message, address, client):
+   """
+   Allows for nick renaming
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -171,6 +195,9 @@ def handle_170(message, address, client):
    DB.update_name(names[0], names[1])
 
 def handle_200(message, address, client):
+   """
+   Handles messages sent by clients
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -195,10 +222,17 @@ def handle_200(message, address, client):
       broadcast_servers(300, message)
 
 def handle_210(message, address, client):
+   """
+   Can be handled by handle_200
+   """
    handle_200(message, address, client)
 
 
 def handle_300(message, address, client):
+   """
+   Handles messages sent by servers or clients.
+   Messages are either private or global
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -218,6 +252,9 @@ def handle_300(message, address, client):
       unicast(300, message, sock) 
 
 def handle_310(message, address, client):
+   """
+   Can be handled by handle_300
+   """
    handle_300(message, address, client)
 
 
@@ -251,6 +288,9 @@ def handle_602(message, addres, client):
       DB.insert(address[0], sock, address[2], PARENT_SERVER)
 
 def handle_604(message, address, client):
+   """
+   Handles server disconnecting
+   """
    DB.update_last_action(client)
    
    msg = message.split()
@@ -278,6 +318,9 @@ def handle_604(message, address, client):
       handle_602(words[1], address, client)
 
 def handle_700(message, address, client):
+   """
+   Allows admin to stop server
+   """
    c = DB.get_by_socket(client)
    if (c["password"]):
       mlogger.info("stopping server")
