@@ -2,7 +2,7 @@ from connection import *
 from packedmessage import *
 from database import *
 import listener
-import log, logging
+import log, logging, sys
 
 logInstance = log.logger('message')
 mlogger = logging.getLogger('message')
@@ -70,7 +70,18 @@ def drop_client_by_socket(sock):
 def handle_100(message, address, client):
    DB.update_last_action(client)
    
-   if (DB.get_by_name(message) != False):
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+   
+   name = msg[0]
+   password = False
+   if(len(msg) == 2):
+      if (msg[1] == "koekje"):
+         password = True
+         
+   if (DB.get_by_name(name) != False):
       unicast(510, "Username already exists.", client)
    else:
       unicast(500,"", client)
@@ -78,11 +89,16 @@ def handle_100(message, address, client):
       for c in all_clients:
          unicast(110, c['name'], client)
          
-      DB.insert( address, client, message, CLIENT)
-      broadcast_all(110, message)
+      DB.insert(address, client, name, CLIENT, None, password)
+      broadcast_all(110, name)
       
 
 def handle_110(message, address, client):
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+   
    if(DB.get_by_socket(client)):
       clients = DB.get_by_type(CLIENT) + DB.get_by_type(PARENT_SERVER) + DB.get_by_type(CHILD_SERVER)
       
@@ -94,13 +110,22 @@ def handle_110(message, address, client):
       DB.insert( address, client, message, CLIENT)
 
 def handle_120(message, address, client):
-   name = message.split()[0]
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+   
    if DB.remove_by_socket(client):
       broadcast_all(130, message)
    del(client)
 
 def handle_130(message, address, client):
    DB.update_last_action(client)
+   
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
    
    name = message.split()[0]
    if(DB.remove_by_name(name)):
@@ -109,13 +134,20 @@ def handle_130(message, address, client):
 def handle_140(message, address, client):
    DB.update_last_action(client)
    
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+   
    unicast(150, message, client)
-
-def handle_150(message, address, client):
-   DB.update_last_action(client)
 
 def handle_160(message, address, client):
    DB.update_last_action(client)
+   
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
    
    if(DB.get_by_name(message) == False):
       oldname = DB.get_by_socket(client)["name"]
@@ -129,11 +161,21 @@ def handle_160(message, address, client):
 def handle_170(message, address, client):
    DB.update_last_action(client)
    
+   msg = message.split()
+   if (len(msg) != 2):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+      
    names = message.split
    DB.update_name(names[0], names[1])
 
 def handle_200(message, address, client):
    DB.update_last_action(client)
+   
+   msg = message.split()
+   if (len(msg) != 2):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
    
    destination = message.split()[0]
    
@@ -152,36 +194,31 @@ def handle_200(message, address, client):
       broadcast_servers(300, message)
 
 def handle_210(message, address, client):
-   DB.update_last_action(client)
-   
-   pass
+   handle_200(message, address, client)
+
 
 def handle_300(message, address, client):
    DB.update_last_action(client)
-   broadcast_clients(300, message)
-   #do stuff
-   pass
+   
+   msg = message.split()
+   if (len(msg) != 3):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
+   
+   sender = msg[0]
+   destination = msg[1]
+   if(destination == '#all'):
+      broadcast_clients(300, message)
+   else:
+      if not (DB.get_by_name(sender)["socket"]):
+         sock = DB.get_by_name(sender)["parent_sock"]
+      else:
+         sock = DB.get_by_name(sender)["socket"]
+      unicast(300, message, sock) 
 
 def handle_310(message, address, client):
-   DB.update_last_action(client)
    handle_300(message, address, client)
 
-
-def handle_500(message, address, client):
-   #server -> client only
-   pass
-
-def handle_510(message, address, client):
-   #server -> client only
-   pass
-
-def handle_520(message, address, client):
-   #to client only
-   pass
-
-def handle_530(message, address, client):
-   #from server to client only
-   pass
 
 def handle_600(message, address, client):
    """
@@ -190,11 +227,6 @@ def handle_600(message, address, client):
    address,name = message.split()
    ip = address.split(':')
    DB.insert(ip[0], client, name, CHILD_SERVER)
-  
-
-def handle_601(message, address, client):
-   #you don't recieve 601's
-   pass
 
 def handle_602(message, addres, client):
    """
@@ -216,14 +248,14 @@ def handle_602(message, addres, client):
       s.start()
       
       DB.insert(address[0], sock, address[2], PARENT_SERVER)
-   
-
-def handle_603(message, address, client):
-   #You don't recieve 603's
-   pass
 
 def handle_604(message, address, client):
    DB.update_last_action(client)
+   
+   msg = message.split()
+   if (len(msg) != 1):
+      mlogger.warning('Invalid message length %s', len(msg))
+      return
    
    words = message.split()
    
@@ -233,8 +265,10 @@ def handle_604(message, address, client):
       return
    
    if removed['type'] == CHILD_SERVER or removed['type'] == PARENT_SERVER:
-      #TODO: remove all clients conencted to this server
-      pass
+      clients = DB.get_by_type(CLIENT)
+      for c in clients:
+         if c["parent_sock"] == removed["socket"]:
+            DB.remove_by_socket(c["socket"])
    
    #remove disconnected node itself
    DB.remove_by_name(removed[0]['name'])
@@ -242,16 +276,10 @@ def handle_604(message, address, client):
    if words[1]:
       handle_602(words[1], address, client)
 
-def handle_610(message, address, client):
-   #sent from client to control server
-   pass
-
-def handle_611(message, address, client):
-   #Sent from control server to client
-   pass
-
 def handle_700(message, address, client):
-   DB.update_last_action(client)
+   c = DB.get_by_socket(client)
+   if (c["password"]):
+      sys.exit()
+
    
-   pass
-   #program.DIE!
+   

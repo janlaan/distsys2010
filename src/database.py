@@ -8,9 +8,11 @@ class Database:
     self.logger = logging.getLogger('database')
     self.logger.info('DB init')
     
-  def insert(self, address, socket, name, conn_type, parent_sock = None):
+  def insert(self, address, socket, name, \
+             conn_type, parent_sock = None, admin = False):
     self.db.append({"address":address, "socket":socket, "name":name,\
-       "type":conn_type, "last_action": time.time(), "parent_sock": parent_sock})
+       "type":conn_type, "last_action": time.time(), "parent_sock": parent_sock,\
+       "password": admin})
     
     
   def get_by_name(self, name):
