@@ -1,6 +1,6 @@
 import threading
 import time
-from actions import *
+import actions
 from database import *
 
 logInstance = log.logger('pinger')
@@ -28,14 +28,14 @@ class Pinger(threading.Thread):
                      #irresponsive client, drop it
                      plogger.info("Client %s (%s) didn't respond to ping, dropping it."\
                         % (c['name'], c['socket'].getaddress()[0]))
-                     drop_client_by_socket(c['socket'])
+                     actions.drop_client_by_socket(c['socket'])
                      
                else:
                   #Clients needs to be pinged: do it.
                   pinged[c['name']] = time.time()
                   plogger.info("Client %s (%s) inactive for over 30 s. Sending ping"\
                      % (c['name'], c['socket'].getaddress()[0]))
-                  unicast(140, 'letsping', c['socket'])
+                  actions.unicast(140, 'letsping', c['socket'])
                
             else:
                #This client has recent activity, don't ping.

@@ -48,9 +48,8 @@ class Clientconn(threading.Thread):
             return
          
          logger.debug("Recieved message from %s" % self.client.getaddress()[0])
-         logger.debug("Message = %s" % msg)
          
-         elif msg:
+         if msg:
             #unpack the received message and process it.
             decoded = Unpacker(msg).get()
             s = serveraction.ServerAction(decoded[1], decoded[2], self.client, '')
