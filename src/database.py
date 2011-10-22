@@ -3,7 +3,7 @@ import time, logging, log
 class Database:
    
   def __init__(self):
-    self.control_server = ("146.50.1.102", 2001)
+    self.control_server = ("owf2.science.uva.nl", 2001)
     self.db = []
     self.logger = logging.getLogger('database')
     self.logger.info('DB init')
