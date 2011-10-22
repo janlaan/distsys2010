@@ -36,5 +36,5 @@ class ServerAction(threading.Thread):
       if fn and callable(fn):
          fn(self.message, self.address, self.client)
       else:
-         alogger.info("Received unknown message from %s, type: %d" % (self.client.getaddress(), self.action_type))
+         alogger.info("Received unknown message from %d, type: %d" % (self.client.getaddress(), self.action_type))
 

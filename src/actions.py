@@ -22,6 +22,7 @@ def broadcast_all(message_type, message):
    """
    Method to send a message to all clients and servers.
    """
+   #sockets = DB.get_all_connections()
    mlogger.info("Broadcasting to all, message: (%d) %s" % (message_type, message))
    sockets = DB.get_by_type(CLIENT) + DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
    for s in sockets:
@@ -38,18 +39,14 @@ def broadcast_clients(message_type, message):
       if s['socket']:
          s['socket'].send(Packer(message_type, message).get())
     
-def broadcast_servers(message_type, message, except_server = 0):
+def broadcast_servers(message_type, message):
    """
    Method to send a message to all servers.
    """
    mlogger.info("Broadcasting to SERVERS, message: (%d) %s" % (message_type, message))
-   
    sockets = DB.get_by_type(CHILD_SERVER) + DB.get_by_type(PARENT_SERVER)
-      
    for s in sockets:
-      if not (except_server and except_server == s['socket']):
-         #skip this server if it is to be excepted (ie: your message came from there)
-         s['socket'].send(Packer(message_type, message).get())
+      s['socket'].send(Packer(message_type, message).get())
    
 def drop_client_by_socket(sock):
    """
@@ -152,7 +149,7 @@ def handle_130(message, address, client):
 
 def handle_140(message, address, client):
    """
-   Received a ping request, send a pong back.
+   Ping pong
    """
    DB.update_last_action(client)
    
@@ -162,12 +159,6 @@ def handle_140(message, address, client):
       return
    
    unicast(150, message, client)
-   
-def handle_150(message, address, client):
-   """
-   You received a pong, good.
-   """
-   DB.update_last_action(client)
 
 def handle_160(message, address, client):
    """
@@ -217,17 +208,12 @@ def handle_200(message, address, client):
    destination = message.split()[0]
    sender = DB.get_by_socket(client)["name"]
    
-   """
-   Decide who to send to, and then do so.
-   """
-   if(destination == "#all"): #message to all
+   if(destination == "#all"):
       broadcast_all(300, sender + ' ' + message)
-   elif(DB.get_by_name(destination) != False): 
+   elif(DB.get_by_name(destination) != False):
       if not (DB.get_by_name(destination)["socket"]):
-         #message to remote client
          sock = DB.get_by_name(destination)["parent_sock"]
-      else: 
-         #message to local client
+      else:
          sock = DB.get_by_name(destination)["socket"]
       unicast(300, sender + ' ' + message, sock)
    
@@ -257,11 +243,8 @@ def handle_300(message, address, client):
    sender = msg[0]
    destination = msg[1]
    if(destination == '#all'):
-      #send to all your clients and to your other connected servers
       broadcast_clients(300, message)
-      broadcast_servers(300, message, client) #except client, that is where the message came from.
    else:
-      #find out if this is a local or remote client, and send the message accordingly
       if not (DB.get_by_name(destination)["socket"]):
          sock = DB.get_by_name(destination)["parent_sock"]
       else:
@@ -279,7 +262,8 @@ def handle_600(message, address, client):
    """
    Another server applies to you to be your child server.
    """
-   address,name,ip = message.split(':')
+   address,name = message.split()
+   ip = address.split(':')
    DB.insert(ip[0], client, name, CHILD_SERVER)
 
 def handle_602(message, addres, client):
